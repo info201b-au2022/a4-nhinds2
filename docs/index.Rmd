@@ -1,46 +1,188 @@
 ---
-title: "Your A4 Report Title (TODO: Revise title)"
-author: "Your Name"
+title: "Incarceration Rates Report"
+author: "Natalie Hinds"
 date: '2022-11-01'
 output: html_document
 ---
 
-```{r echo=FALSE, eval=TRUE, message=FALSE}
-source("../source/a4-helpers.R")
-source("../source/analysis.R")
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library("tidyr")
+library("knitr")
+library("dplyr")
+source("~/info201/assignments/a4-nhinds2/source/analysis.R")
 ```
-
 ## Abstract 
-[TODO: Include a short abstract (about 50 words)]
-
-# Test (TODO: Remove before submission!!)
-```{r echo=FALSE}
-q1_string <- test_query1()
-num <- 5
-```
-As you know, this is a markdown report. The [R Markdown Cheatsheet](https://www.rstudio.com/wp-content/uploads/2015/02/rmarkdown-cheatsheet.pdf) is **useful!**
-
-* Here's a test of a dynamic variable. Say **"`r q1_string`!!!** 
-* Here's another test. A vector
-of numbers: `r test_query2(num)`.
-* heres anjotherbullet
-
-Recall that _{r echo=TRUE}_ can be used to display the code, 
-which is very useful when developing and debugging a report. Here's an example: 
-
-```{r echo=TRUE}
-num <- 5
-sum <- sum(test_query2(num))
-print(sum)
-```
+This project will show forms of discrimination in prison and jails. This project also portrays how some races are over represented in prisons and jails due to overpolicing of certain areas. 
 
 ## Introduction 
-[TODO]
+In this assignment, we are expected to create visualizations that show the extreme amount of incarceration rates, and how they are much higher than that of white people being incarcerated. Much of the criminalization of black people started before the war on drugs. This was due to the racist history of lynching black people. The racism became more subtle with the war on drugs, but the evidence of racism is clear that there was over policing in black communities and black people were being arrested at a much higher rate for possession of marijuana. 
+
+The direct stakeholders in this report are legislators and people who have the power to change laws surrounding over policing and mass incarceration. Another direct stakeholder is news reporters, as they will work closely with the visualization to return the data and evidence. The direct stakeholders are those imprisoned, as they will be directly affected by the data, and it will hopefully affect their release date. Those that are indirect stakeholders are the general public and people that have family members in prison. 
+
+The questions that I want to answer in my report are: 
+
+* Are marginalized people affected by incarceration at much higher rates than non-marginalized people? 
+
+* Have incarceration rates grown overtime, and if so, what trends are emerging?
+```{r echo=FALSE}
+avg_total_rate <- filter_max_year %>%
+  summarize(average = mean(total_jail_pop_rate, na.rm=TRUE))%>%
+  pull(average)
+
+filter_max_year <- incarceration_df %>%
+  filter(year== max(year, na.rm=TRUE))
+
+max_jail_prop <- filter_max_year %>%
+  group_by(county_name)%>%
+ mutate(prop = (total_jail_pop)/(total_pop))%>%
+  filter(!is.na(prop))%>%
+  mutate(prop = max(prop))%>%
+  select(prop, county_name)%>%
+  arrange(-prop)%>%
+  subset(prop == max(prop))%>%
+  pull(county_name)
+
+
+black_jail_prop <- filter_max_year%>%
+  filter(!is.na(black_jail_pop))%>%
+  filter(!is.na(total_jail_pop))%>%
+  summarise(pop_rate =sum(black_jail_pop)/sum(total_jail_pop))%>%
+  select(pop_rate)%>%
+pull(pop_rate)
+## What proportion do black people make up in the USA
+black_total_prop <- filter_max_year%>%
+  filter(!is.na(black_pop_15to64))%>%
+  filter(!is.na(total_pop_15to64))%>%
+  summarise(total_pop_rate =sum(black_pop_15to64)/sum(total_pop_15to64))%>%
+  select(total_pop_rate)%>%
+  pull(total_pop_rate)
+  
+##What is the proportion of number of black people in jail?
+
+white_jail_prop <- filter_max_year%>%
+  filter(!is.na(white_jail_pop))%>%
+  filter(!is.na(total_jail_pop))%>%
+  summarise(pop_rate =sum(white_jail_pop)/sum(total_jail_pop))%>%
+  select(pop_rate)%>%
+  pull(pop_rate)
+## What proportion do black people make up in the USA
+white_total_prop <- filter_max_year%>%
+  filter(!is.na(white_pop_15to64))%>%
+  filter(!is.na(total_pop_15to64))%>%
+  summarise(total_pop_rate =sum(white_pop_15to64)/sum(total_pop_15to64))%>%
+  select(total_pop_rate)%>%
+  pull(total_pop_rate)
+
+```
 
 ## Data Summary 
-[TODO]
+The average  total jail  population rate across all counties of the most recent year is `r avg_total_rate`. The county with the highest jail population is `r max_jail_prop`. 
+While black people only make up a proportion of `r black_total_prop`, they make up a proportion of `r black_jail_prop` in jail. Conversely, white people make up a proportion of `r white_total_prop`, yet only make up a proportion of `r white_jail_prop` in jail. This shows how black people are over policed and have higher rates of being arrested due to the war on drugs. 
 
-[TODO ... other sections ... See Canvas for details]
 
-_All the very best with your work!_
+## Growth of the US Prison Population
+```{r, echo=FALSE, eval=TRUE}
 
+get_year_jail_pop <- function(){
+data <-  incarceration_df %>%
+  filter(!is.na(total_jail_pop))%>%
+  group_by(year)%>%
+  select(year, total_jail_pop)%>%
+  summarise(sum_pop = sum(total_jail_pop))
+
+return(data)
+
+}
+get_year_pop <- get_year_jail_pop()
+View(get_year_pop)
+
+
+
+
+# This function ... <todo:  update comment>
+plot_jail_pop_for_us <- function(){
+ pop <- ggplot(get_year_jail_pop())+
+   geom_col(
+     mapping = aes(x = year, y = sum_pop))+
+   labs(
+     x= "Year",
+     y= "Total Jail Population",
+     title = "Increase of Jail Population in US (1970-2018)",
+   )
+ 
+  return(pop)   
+} 
+plot <- print(plot_jail_pop_for_us())
+
+```
+
+
+The key patterns that this chart shows is that the prison population increased significantly between 1980 and 2000. In addition, the prison population has maintained being above 600,000 until 2018. This answers the question: Has the jail population increased from 1970-2018? This chart shows the the jail population has increased. 
+
+#Growth of Prison Population by State
+```{r, echo=FALSE, eval=TRUE}
+
+get_jail_pop_by_states <- function(states){
+  
+  prison_df <- incarceration_df %>%
+    filter(state %in% states)%>%
+    group_by(state, year)%>%
+    summarize(sum_pop = sum(total_prison_pop,
+              na.rm=TRUE), 
+              .groups = "drop")
+    
+ return(prison_df)
+}
+View(get_jail_pop_by_states(c("GA","WA","AL", "CA", "TX")))
+
+  
+  plot_jail_pop_by_states <- function(states){
+    plot_state <- ggplot(data= get_jail_pop_by_states(states),
+                  aes(
+                    x = year, 
+                    y = sum_pop,
+                    group = state
+                    )
+                )+
+      geom_line(
+        aes(linetype= state, color = state)
+        )+
+      labs(x= "Year",
+           y= "Total Jail Population",
+        title = "Growth of Prison Population By State")
+      
+  return(plot_state)  
+  }
+  plot_jail_pop_by_states(c("GA","WA","AL", "CA", "TX"))
+  
+```
+ _Plot of prison population growth for states Georgia, Washington, Alabama, California, and Texas._
+ 
+ This plot shows the prison growth for the current states. It displays a question on how different states grow due to the prison population. This graph displays how states such as Texas and Georgia have a high total population, therefore they also have a high prison population. This graph also answers the question: has prison population grown significantly in certain states?
+ 
+```{r, echo=FALSE, eval=TRUE}
+ 
+plot(black_pop())
+
+```
+_This chart shows how the proportion of black people in a certain county and the population of those in jail._
+
+```{r, echo=FALSE, eval=TRUE}
+plot(plot_2())
+
+```
+
+_This chart shows how the proportion of black people in a certain county and the population of those in jail._
+
+These charts show that there a higher proportion of black people that are in jail versus the regular proportion of black people in the county. This shows that black people are disproportionality represented in Jail. In addition, it shows that black people in counties that are predominantly white counties are more likely to be in jail. On the other hand, the chart shows that white people with a low population proportion are underrepresented in jail. This shows how predominantly white communities are under policed and subsequently make up a lower proportion of them in jail compared to the proportion in a county. Ultimately, this dataset answers the question: are black people disproportionately jailed at a higher rate in predominately white counties? The answer to this question looking at this data is yes. 
+
+```{r, echo=FALSE, eval=TRUE}
+
+   plot(data_map1())
+      # variable containing map styles (defined in next code snippet)
+    
+ 
+ ###function for white populati
+```
+This map shows the population proportion of black people throughout the states in jail as of 2018. You can see that there tend to be higher numbers in the east of the country. The lower east has some of the highest proportions. The midwest has lower proportions of the black population. This also reveals an inequality on how the south has a high number of those in jail.
